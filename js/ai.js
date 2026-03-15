@@ -130,54 +130,53 @@ async function generateRoomNarration(roomId, room, isFirstVisit) {
   prompt += '- 绝对不要在叙述中提及任何角色的通讯编号。编号只有在玩家主动请求时才由callAI处理，不在房间叙述中出现\n';
   prompt += '- 全程使用中文，禁止混入任何英文、日文或其他语言的词汇\n';
 
-  try {
-    var fullResponse = '';
-    stopController = new AbortController();
-    await mujianSdk.ai.chat.complete(
-      prompt,
-      function(res) {
-        fullResponse = res.fullContent || '';
-        if (res.isFinished) {
-          hideTyping();
-          // ★ 过滤AI复读的系统提示
-          fullResponse = fullResponse.replace(/\*\*\[當前房間\]\*\*.*/g, '');
-          fullResponse = fullResponse.replace(/\*\*\[当前房间\]\*\*.*/g, '');
-          fullResponse = fullResponse.replace(/\*\*\[房間設定\]\*\*.*/g, '');
-          fullResponse = fullResponse.replace(/\*\*\[房间设定\]\*\*.*/g, '');
-          fullResponse = fullResponse.replace(/【副本】.*?body_state.*?\n/g, '');
-          fullResponse = fullResponse.replace(/【当前房间】.*?\n/g, '');
-          fullResponse = fullResponse.replace(/【当前副本】.*?\n/g, '');
-          fullResponse = fullResponse.replace(/玩家【健康】.*?\n/g, '');
-          fullResponse = fullResponse.replace(/玩家【SAN】.*?\n/g, '');
-          fullResponse = fullResponse.replace(/choice_setd.*?\n/g, '');
-          fullResponse = fullResponse.replace(/\n{3,}/g, '\n\n').trim();
+    try {
+    var messages = [
+      { role: 'system', content: prompt }
+    ];
+    var fullResponse = await callOpenAICompatible(messages);
 
-          // ★ 过滤混入的外语词汇
-          fullResponse = fullResponse.replace(/\b[a-zA-Z]{4,}\b/g, '');
-          fullResponse = fullResponse.replace(/\s{2,}/g, ' ').trim();
+    hideTyping();
 
-          if (fullResponse && fullResponse.trim().length > 10) {
-    // ★ 分段显示AI叙述，像预设文本一样一段一段出现
-    addMessageParagraphs('narrator', fullResponse, 700);
+    if (fullResponse) {
+      // ★ 过滤AI复读的系统提示
+      fullResponse = fullResponse.replace(/\*\*\[當前房間\]\*\*.*/g, '');
+      fullResponse = fullResponse.replace(/\*\*\[当前房间\]\*\*.*/g, '');
+      fullResponse = fullResponse.replace(/\*\*\[房間設定\]\*\*.*/g, '');
+      fullResponse = fullResponse.replace(/\*\*\[房间设定\]\*\*.*/g, '');
+      fullResponse = fullResponse.replace(/【副本】.*?body_state.*?\n/g, '');
+      fullResponse = fullResponse.replace(/【当前房间】.*?\n/g, '');
+      fullResponse = fullResponse.replace(/【当前副本】.*?\n/g, '');
+      fullResponse = fullResponse.replace(/玩家【健康】.*?\n/g, '');
+      fullResponse = fullResponse.replace(/玩家【SAN】.*?\n/g, '');
+      fullResponse = fullResponse.replace(/choice_setd.*?\n/g, '');
+      fullResponse = fullResponse.replace(/\n{3,}/g, '\n\n').trim();
 
-    // ★ 提取NPC台词存入历史，用于下次防重复
-    extractAndSaveNPCDialogues(fullResponse);
-} else {
+      // ★ 过滤混入的外语词汇
+      fullResponse = fullResponse.replace(/\b[a-zA-Z]{4,}\b/g, '');
+      fullResponse = fullResponse.replace(/\s{2,}/g, ' ').trim();
 
-            if (isFirstVisit && room.firstVisitText) {
-              addMessage('narrator', room.firstVisitText);
-            } else if (room.description) {
-              addMessage('narrator', room.description);
-            }
-          }
-          setTimeout(function() { generateContextActions(); }, 500);
+      if (fullResponse && fullResponse.trim().length > 10) {
+        addMessageParagraphs('narrator', fullResponse, 700);
+        extractAndSaveNPCDialogues(fullResponse);
+      } else {
+        if (isFirstVisit && room.firstVisitText) {
+          addMessage('narrator', room.firstVisitText);
+        } else if (room.description) {
+          addMessage('narrator', room.description);
         }
-      },
-      stopController.signal,
-      { parseContent: true }
-    );
+      }
+    } else {
+      if (isFirstVisit && room.firstVisitText) {
+        addMessage('narrator', room.firstVisitText);
+      } else if (room.description) {
+        addMessage('narrator', room.description);
+      }
+    }
+    setTimeout(function() { generateContextActions(); }, 500);
   } catch(e) {
     hideTyping();
+    console.error('房间叙述AI调用失败:', e);
     if (isFirstVisit && room.firstVisitText) {
       addMessage('narrator', room.firstVisitText);
     } else if (room.description) {
@@ -323,7 +322,7 @@ function triggerRandomNPCDeath() {
   ];
   victim._deathDesc = deathDescs[Math.floor(Math.random() * deathDescs.length)];
 
-  if (G.connected && mujianSdk) {
+  if (G.connected) {
     callAIForNPCDeath(victim);
   } else {
     addMessage('horror', '远处传来一声凄厉的惨叫——');
@@ -346,25 +345,24 @@ async function callAIForNPCDeath(victim) {
   prompt += '先描述异常声响，然后描述发现死亡的过程。不要用emoji。全程使用中文。';
 
   try {
-    var fullResponse = '';
-    stopController = new AbortController();
-    await mujianSdk.ai.chat.complete(
-      prompt,
-      function(res) {
-        fullResponse = res.fullContent || '';
-        if (res.isFinished && fullResponse) {
-          // ★ 分段显示死亡叙述
-          addMessageParagraphs('horror', fullResponse, 800, function() {
-            addMessage('system', '⚠️ ' + victim.name + '已死亡');
-            updateSAN(G.san - 8);
-            addMessage('system', '🧠 SAN -8');
-            showNotification('💀 ' + victim.name + '死了', 'horror');
-          });
-        }
-      },
-      stopController.signal,
-      { parseContent: true }
-    );
+    var messages = [
+      { role: 'system', content: prompt }
+    ];
+    var fullResponse = await callOpenAICompatible(messages);
+
+    if (fullResponse) {
+      addMessageParagraphs('horror', fullResponse, 800, function() {
+        addMessage('system', '⚠️ ' + victim.name + '已死亡');
+        updateSAN(G.san - 8);
+        addMessage('system', '🧠 SAN -8');
+        showNotification('💀 ' + victim.name + '死了', 'horror');
+      });
+    } else {
+      addMessage('horror', '远处传来一声凄厉的惨叫——' + victim.icon + ' ' + victim.name + '的声音突然中断了。');
+      addMessage('system', '⚠️ ' + victim.name + '已死亡');
+      updateSAN(G.san - 8);
+      showNotification('💀 ' + victim.name + '死了', 'horror');
+    }
   } catch(e) {
     addMessage('horror', '远处传来一声凄厉的惨叫——' + victim.icon + ' ' + victim.name + '的声音突然中断了。');
     addMessage('system', '⚠️ ' + victim.name + '已死亡');
