@@ -1,9 +1,4 @@
 async function callAI(playerText) {
-  if (!AI_CONFIG.baseUrl || !AI_CONFIG.apiKey) {
-    addMessage('system', '⚠️ AI服务未配置，请在菜单 → AI服务设置中配置');
-    openAISettings();
-    return;
-  }
   G._lastPlayerInput = playerText;
   showTyping();
 
@@ -32,8 +27,8 @@ async function callAI(playerText) {
 
     // 构建消息列表
     var messages = [{ role: 'system', content: systemPrompt }];
-    
-    // 添加最近对话历史
+
+    // 加入最近的对话历史
     var recent = G.messageHistory.slice(-10);
     recent.forEach(function(m) {
       if (m.type === 'player') {
@@ -42,35 +37,24 @@ async function callAI(playerText) {
         messages.push({ role: 'assistant', content: m.text });
       }
     });
-    
+
     messages.push({ role: 'user', content: playerText });
 
-    var fullResponse = '';
-    stopController = new AbortController();
-    
-    await streamChatCompletion(
-      messages,
-      function(res) {
-        fullResponse = res.fullContent || '';
-        if (res.isFinished) {
-          hideTyping();
-          if (fullResponse) {
-            parseAIResponse(fullResponse);
-          }
-        }
-      },
-      stopController.signal
-    );
+    // 调用 OpenAI 兼容 API
+    var fullResponse = await callOpenAICompatible(messages);
+
+    hideTyping();
+    if (fullResponse) {
+      parseAIResponse(fullResponse);
+    }
   } catch (e) {
     hideTyping();
     console.error('❌ AI调用失败:', e);
-    if (e.name === 'AbortError') {
-      addMessage('system', '（已停止生成）');
+    if (e.message && e.message.indexOf('未配置API') >= 0) {
+      addMessage('system', '⚠️ 未配置API，请点击菜单 ☰ → API设置');
     } else {
-      addMessage('system', '（AI响应异常：' + e.message + '）');
-      if (typeof offlineFallback === 'function') {
-        offlineFallback(playerText);
-      }
+      addMessage('system', '（AI响应异常，使用离线模式）');
+      if (typeof offlineFallback === 'function') offlineFallback(playerText);
     }
   }
 }
