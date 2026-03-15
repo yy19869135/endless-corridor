@@ -303,10 +303,17 @@
       <input type="password" class="api-field-input" id="apiKey" placeholder="sk-..." />
       <div class="api-field-hint">你的 API 密钥，存储在本地不会上传</div>
     </div>
-    <div class="api-field-group">
+        <div class="api-field-group">
       <label class="api-field-label">模型名称</label>
+      <div class="api-model-row">
+        <select class="api-field-select" id="apiModelSelect" onchange="onModelSelectChange()">
+          <option value="">-- 手动输入或获取列表 --</option>
+        </select>
+        <button class="api-fetch-models-btn" onclick="fetchModelList()">📡 获取</button>
+      </div>
       <input type="text" class="api-field-input" id="apiModel" placeholder="gpt-4o-mini" />
-      <div class="api-field-hint">例如 gpt-4o、gpt-4o-mini、claude-3-haiku 等</div>
+      <div class="api-field-hint">点击「获取」自动拉取可用模型列表，或直接手动输入模型名</div>
+      <div class="api-model-status" id="apiModelStatus"></div>
     </div>
     <div class="api-field-group">
       <label class="api-field-label">玩家名字</label>
