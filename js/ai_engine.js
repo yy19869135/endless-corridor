@@ -9,7 +9,16 @@ async function callAI(playerText) {
       var room = G.dungeon.rooms[G.currentRoom];
       systemPrompt = buildDungeonAIPrompt(room, playerText);
     } else {
-      systemPrompt = '你是「苍白回廊」无限流生存游戏的系统AI。玩家在大世界中。简短回复，保持神秘感。不要使用emoji。';
+      // 大世界：注入全局世界书
+      systemPrompt = buildGlobalWorldbookPrompt(false);
+      systemPrompt += '【当前场景】玩家在苍白回廊大世界中。\n';
+      systemPrompt += '【玩家状态】HP：' + G.hp + '/' + G.maxHp + ' | SAN：' + G.san + '/' + G.maxSan + ' | 灵魂碎片：' + G.soulFragments + '\n\n';
+      systemPrompt += '【行为规则】\n';
+      systemPrompt += '1. 大世界中不使用游戏指令（不用[HP]、[SAN]、[ITEM_ADD]等），只进行叙述和对话\n';
+      systemPrompt += '2. 保持神秘感和隐约的不安氛围\n';
+      systemPrompt += '3. NPC按各自性格说话行动\n';
+      systemPrompt += '4. 使用逐条消息式输出格式\n';
+      systemPrompt += '5. 回复控制在5-10条消息\n';
     }
 
     // ★ 注入玩家名字信息
