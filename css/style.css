@@ -598,7 +598,7 @@ body {
   border-radius: 20px;
   font-size: 13px;
   color: white;
-  z-index: 60;
+  z-index: 9999;
   opacity: 0;
   transition: all 0.3s ease;
   pointer-events: none;
