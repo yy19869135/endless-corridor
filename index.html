@@ -250,7 +250,7 @@
     <div class="game-menu-item" onclick="doLoadGame()">📂 读档</div>
     <div class="game-menu-item" onclick="closeGameMenu();openHintPanel()">🕯️ 先驱者笔记</div>
     <div class="game-menu-item" onclick="openStoryRecall()">📖 回忆剧情</div>
-    <div class="game-menu-item" onclick="closeGameMenu();openAISettings()">⚙️ AI服务设置</div>
+    <div class="game-menu-item" onclick="openAPISettings()">⚙️ API设置</div>
     <div class="game-menu-item danger" onclick="confirmRestart()">🔄 重新开始</div>
     <div class="game-menu-close" onclick="closeGameMenu()">返回</div>
   </div>
@@ -266,36 +266,6 @@
     <div class="story-recall-close" onclick="closeStoryRecall()">关闭</div>
   </div>
 </div>
-
-<!-- AI服务设置弹窗 -->
-<div class="ai-settings-overlay" id="aiSettingsOverlay" onclick="if(event.target===this)closeAISettings()">
-  <div class="ai-settings-panel">
-    <div class="ai-settings-title">⚙️ AI 服务设置</div>
-    <div class="ai-field-group">
-      <label class="ai-field-label">API Base URL</label>
-      <input type="text" id="aiBaseUrl" class="ai-field-input" placeholder="https://api.openai.com/v1">
-    </div>
-    <div class="ai-field-group">
-      <label class="ai-field-label">API Key</label>
-      <input type="password" id="aiApiKey" class="ai-field-input" placeholder="sk-...">
-    </div>
-    <div class="ai-field-group">
-      <label class="ai-field-label">Model Name</label>
-      <div class="ai-model-row">
-        <input type="text" id="aiModelName" class="ai-field-input" placeholder="gpt-4o">
-        <button class="ai-fetch-btn" onclick="fetchModelList()">📋 获取</button>
-      </div>
-    </div>
-    <div class="ai-model-list" id="aiModelList"></div>
-    <div class="ai-btn-group">
-      <button class="ai-test-btn" onclick="testAIConnection()">🔌 测试连接</button>
-      <button class="ai-save-btn" onclick="saveAISettings()">💾 保存</button>
-    </div>
-    <div class="ai-status" id="aiSettingsStatus"></div>
-    <button class="ai-close-btn" onclick="closeAISettings()">关闭</button>
-  </div>
-</div>
-
 
 <!-- 特效层 -->
 <div class="san-effect" id="sanEffect"></div>
@@ -315,6 +285,45 @@
     <span style="cursor:pointer;font-size:14px" onclick="renderSystemApp('contacts')">📱</span>
     <span style="cursor:pointer;font-size:14px" onclick="renderSystemApp('bag')">🎒</span>
     <span style="cursor:pointer;font-size:14px" onclick="renderSystemApp('rank')">🏆</span>
+  </div>
+</div>
+
+<!-- API设置弹窗 -->
+<div class="api-settings-overlay" id="apiSettingsOverlay" onclick="if(event.target===this)closeAPISettings()">
+  <div class="api-settings-panel">
+    <div class="api-settings-title">⚙️ API 设置</div>
+    <div class="api-settings-desc">配置 OpenAI 兼容的 API 接口</div>
+    <div class="api-field-group">
+      <label class="api-field-label">API 地址</label>
+      <input type="text" class="api-field-input" id="apiBaseUrl" placeholder="https://api.openai.com/v1" />
+      <div class="api-field-hint">支持任何 OpenAI 兼容接口，如 https://api.openai.com/v1</div>
+    </div>
+    <div class="api-field-group">
+      <label class="api-field-label">API Key</label>
+      <input type="password" class="api-field-input" id="apiKey" placeholder="sk-..." />
+      <div class="api-field-hint">你的 API 密钥，存储在本地不会上传</div>
+    </div>
+    <div class="api-field-group">
+      <label class="api-field-label">模型名称</label>
+      <input type="text" class="api-field-input" id="apiModel" placeholder="gpt-4o-mini" />
+      <div class="api-field-hint">例如 gpt-4o、gpt-4o-mini、claude-3-haiku 等</div>
+    </div>
+    <div class="api-field-group">
+      <label class="api-field-label">玩家名字</label>
+      <input type="text" class="api-field-input" id="apiPlayerName" placeholder="输入你的角色名" maxlength="20" />
+      <div class="api-field-hint">你在游戏中的角色名称</div>
+    </div>
+    <div class="api-field-group">
+      <label class="api-field-label">玩家人设（可选）</label>
+      <textarea class="api-field-textarea" id="apiPlayerPersona" placeholder="描述你的角色背景、性格等..." rows="3" maxlength="500"></textarea>
+      <div class="api-field-hint">角色的背景描述，会影响AI的叙述风格</div>
+    </div>
+    <div class="api-btn-group">
+      <button class="api-save-btn" onclick="saveAPISettings()">💾 保存设置</button>
+      <button class="api-test-btn" onclick="testAPIConnection()">🔗 测试连接</button>
+    </div>
+    <div class="api-test-result" id="apiTestResult"></div>
+    <button class="api-close-btn" onclick="closeAPISettings()">关闭</button>
   </div>
 </div>
 
