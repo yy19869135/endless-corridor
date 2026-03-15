@@ -53,7 +53,7 @@ async function callAI(playerText) {
     if (e.message && e.message.indexOf('未配置API') >= 0) {
       addMessage('system', '⚠️ 未配置API，请点击菜单 ☰ → API设置');
     } else {
-      addMessage('system', '（AI响应异常，使用离线模式）');
+      addMessage('system', '（AI响应异常: ' + e.message + '）');
       if (typeof offlineFallback === 'function') offlineFallback(playerText);
     }
   }
