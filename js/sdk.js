@@ -185,11 +185,6 @@ async function initMujianSDK() {
   
   if (!isConfigured) {
     console.log('⚠️ AI服务未配置，请在菜单 → AI服务设置中配置');
-    // 首次使用自动弹出设置
-    setTimeout(function() {
-      if (!AI_CONFIG.baseUrl) {
-        openAISettings();
-      }
-    }, 2000);
+    // 不再自动弹出，只在控制台提示
   }
 }
