@@ -249,64 +249,62 @@ generateRoomNarration = async function(roomId, room, isFirstVisit) {
   // ===== ★ 注入随机事件指令 =====
   prompt += getRandomEventPromptInjection(room);
   
-  // ===== 调用AI =====
+    // ===== 调用AI =====
   try {
-    var fullResponse = '';
-    stopController = new AbortController();
-    await mujianSdk.ai.chat.complete(
-      prompt,
-      function(res) {
-        fullResponse = res.fullContent || '';
-        if (res.isFinished) {
-          hideTyping();
-          
-          // ★ 先解析随机事件（在过滤之前，保持JSON完整）
-var parsed = parseRandomEvent(fullResponse);
+    var messages = [
+      { role: 'system', content: prompt }
+    ];
+    var fullResponse = await callOpenAICompatible(messages);
 
-// ★ 再过滤系统提示复读（只过滤叙述文本）
-if (parsed && parsed.cleanText) {
-  parsed.cleanText = filterAISystemEcho(parsed.cleanText);
-} else {
-  fullResponse = filterAISystemEcho(fullResponse);
-}
+    hideTyping();
+
+    if (fullResponse) {
+      // ★ 先解析随机事件（在过滤之前，保持JSON完整）
+      var parsed = parseRandomEvent(fullResponse);
+
+      // ★ 再过滤系统提示复读（只过滤叙述文本）
+      if (parsed && parsed.cleanText) {
+        parsed.cleanText = filterAISystemEcho(parsed.cleanText);
+      } else {
+        fullResponse = filterAISystemEcho(fullResponse);
+      }
           
-          if (parsed && parsed.eventData) {
-            // 有随机事件：先显示叙述，再弹出事件
-            if (parsed.cleanText && parsed.cleanText.trim().length > 10) {
-              addMessageParagraphs('narrator', parsed.cleanText, 700, function() {
-                // 叙述显示完毕后，延迟弹出事件
-                setTimeout(function() {
-                  showRandomEventPopup(parsed.eventData);
-                }, 1200);
-              });
-              extractAndSaveNPCDialogues(parsed.cleanText);
-            } else {
-              // 叙述太短，直接弹事件
+      if (parsed && parsed.eventData) {
+        // 有随机事件：先显示叙述，再弹出事件
+        if (parsed.cleanText && parsed.cleanText.trim().length > 10) {
+          addMessageParagraphs('narrator', parsed.cleanText, 700, function() {
+            setTimeout(function() {
               showRandomEventPopup(parsed.eventData);
-            }
-          } else {
-            // 解析失败，当普通叙述处理
-            if (fullResponse && fullResponse.trim().length > 10) {
-              addMessageParagraphs('narrator', fullResponse, 700);
-              extractAndSaveNPCDialogues(fullResponse);
-            } else {
-              if (isFirstVisit && room.firstVisitText) {
-                addMessage('narrator', room.firstVisitText);
-              } else if (room.description) {
-                addMessage('narrator', room.description);
-              }
-            }
-          }
-          
-          setTimeout(function() { generateContextActions(); }, 500);
+            }, 1200);
+          });
+          extractAndSaveNPCDialogues(parsed.cleanText);
+        } else {
+          showRandomEventPopup(parsed.eventData);
         }
-      },
-      stopController.signal,
-      { parseContent: true }
-    );
+      } else {
+        // 解析失败，当普通叙述处理
+        if (fullResponse && fullResponse.trim().length > 10) {
+          addMessageParagraphs('narrator', fullResponse, 700);
+          extractAndSaveNPCDialogues(fullResponse);
+        } else {
+          if (isFirstVisit && room.firstVisitText) {
+            addMessage('narrator', room.firstVisitText);
+          } else if (room.description) {
+            addMessage('narrator', room.description);
+          }
+        }
+      }
+    } else {
+      if (isFirstVisit && room.firstVisitText) {
+        addMessage('narrator', room.firstVisitText);
+      } else if (room.description) {
+        addMessage('narrator', room.description);
+      }
+    }
+    setTimeout(function() { generateContextActions(); }, 500);
   } catch(e) {
     hideTyping();
-    // 回退到原始函数
+    console.error('随机事件AI调用失败:', e);
     if (isFirstVisit && room.firstVisitText) {
       addMessage('narrator', room.firstVisitText);
     } else if (room.description) {
