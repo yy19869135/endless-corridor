@@ -13,9 +13,10 @@ async function sendPlayerInput() {
   }
 
   // 调用AI
-  if (G.connected && mujianSdk) {
+    if (G.connected) {
     await callAI(text);
   } else {
+
     // 离线回退
     addMessage('system', '（AI未连接，使用离线模式）');
     offlineFallback(text);
