@@ -1,172 +1,3 @@
-// ========== AI服务配置（替代幕间SDK） ==========
-var AI_CONFIG = {
-  baseUrl: '',
-  apiKey: '',
-  model: '',
-  maxTokens: 2048,
-  temperature: 0.85
-};
-
-function loadAIConfig() {
-  try {
-    var saved = localStorage.getItem('paleCorridor_aiConfig');
-    if (saved) {
-      var parsed = JSON.parse(saved);
-      AI_CONFIG.baseUrl = parsed.baseUrl || '';
-      AI_CONFIG.apiKey = parsed.apiKey || '';
-      AI_CONFIG.model = parsed.model || '';
-    }
-  } catch(e) {}
-}
-
-function saveAIConfig() {
-  localStorage.setItem('paleCorridor_aiConfig', JSON.stringify({
-    baseUrl: AI_CONFIG.baseUrl,
-    apiKey: AI_CONFIG.apiKey,
-    model: AI_CONFIG.model
-  }));
-}
-
-function openAISettings() {
-  loadAIConfig();
-  document.getElementById('aiBaseUrl').value = AI_CONFIG.baseUrl;
-  document.getElementById('aiApiKey').value = AI_CONFIG.apiKey;
-  document.getElementById('aiModelName').value = AI_CONFIG.model;
-  document.getElementById('aiSettingsStatus').textContent = '';
-  // 清空模型列表
-  var listEl = document.getElementById('aiModelList');
-  if (listEl) listEl.innerHTML = '';
-  document.getElementById('aiSettingsOverlay').classList.add('show');
-}
-
-function closeAISettings() {
-  document.getElementById('aiSettingsOverlay').classList.remove('show');
-}
-
-function saveAISettings() {
-  AI_CONFIG.baseUrl = document.getElementById('aiBaseUrl').value.trim().replace(/\/+$/, '');
-  AI_CONFIG.apiKey = document.getElementById('aiApiKey').value.trim();
-  AI_CONFIG.model = document.getElementById('aiModelName').value.trim();
-  saveAIConfig();
-  
-  var isConfigured = AI_CONFIG.baseUrl && AI_CONFIG.apiKey && AI_CONFIG.model;
-  updateConnectionStatus(isConfigured);
-  G.connected = isConfigured;
-  
-  document.getElementById('aiSettingsStatus').innerHTML = '<span style="color:#8f8">✅ 已保存</span>';
-}
-
-// ========== 获取模型列表 ==========
-async function fetchModelList() {
-  var statusEl = document.getElementById('aiSettingsStatus');
-  var listEl = document.getElementById('aiModelList');
-  var url = document.getElementById('aiBaseUrl').value.trim().replace(/\/+$/, '');
-  var key = document.getElementById('aiApiKey').value.trim();
-  
-  if (!url || !key) {
-    statusEl.innerHTML = '<span style="color:#f88">❌ 请先填写 API Base URL 和 API Key</span>';
-    return;
-  }
-  
-  statusEl.innerHTML = '<span style="color:#ff8">⏳ 获取模型列表...</span>';
-  if (listEl) listEl.innerHTML = '';
-  
-  try {
-    var response = await fetch(url + '/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer ' + key
-      }
-    });
-    
-    if (!response.ok) {
-      var errText = await response.text();
-      statusEl.innerHTML = '<span style="color:#f88">❌ HTTP ' + response.status + ': ' + errText.substring(0, 60) + '</span>';
-      return;
-    }
-    
-    var data = await response.json();
-    var models = data.data || data;
-    
-    if (!models || models.length === 0) {
-      statusEl.innerHTML = '<span style="color:#f88">❌ 未找到可用模型</span>';
-      return;
-    }
-    
-    // 排序：按id字母顺序
-    models.sort(function(a, b) {
-      return (a.id || '').localeCompare(b.id || '');
-    });
-    
-    statusEl.innerHTML = '<span style="color:#8f8">✅ 找到 ' + models.length + ' 个模型，点击选择</span>';
-    
-    if (listEl) {
-      listEl.innerHTML = '';
-      for (var i = 0; i < models.length; i++) {
-        var modelId = models[i].id || models[i];
-        var btn = document.createElement('div');
-        btn.className = 'model-list-item';
-        btn.textContent = modelId;
-        btn.setAttribute('data-model', modelId);
-        btn.onclick = function() {
-          document.getElementById('aiModelName').value = this.getAttribute('data-model');
-          // 高亮选中
-          var items = listEl.querySelectorAll('.model-list-item');
-          for (var j = 0; j < items.length; j++) {
-            items[j].classList.remove('selected');
-          }
-          this.classList.add('selected');
-          statusEl.innerHTML = '<span style="color:#8f8">✅ 已选择: ' + this.getAttribute('data-model') + '</span>';
-        };
-        listEl.appendChild(btn);
-      }
-    }
-    
-  } catch(e) {
-    statusEl.innerHTML = '<span style="color:#f88">❌ 网络错误: ' + e.message + '</span>';
-  }
-}
-
-async function testAIConnection() {
-  var statusEl = document.getElementById('aiSettingsStatus');
-  var url = document.getElementById('aiBaseUrl').value.trim().replace(/\/+$/, '');
-  var key = document.getElementById('aiApiKey').value.trim();
-  var model = document.getElementById('aiModelName').value.trim();
-  
-  if (!url || !key || !model) {
-    statusEl.innerHTML = '<span style="color:#f88">❌ 请填写完整配置</span>';
-    return;
-  }
-  
-  statusEl.innerHTML = '<span style="color:#ff8">⏳ 测试中...</span>';
-  
-  try {
-    var response = await fetch(url + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + key
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: 'user', content: '回复"连接成功"这四个字' }],
-        max_tokens: 20
-      })
-    });
-    
-    if (response.ok) {
-      var data = await response.json();
-      var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-      statusEl.innerHTML = '<span style="color:#8f8">✅ 连接成功！回复: ' + (reply || '').substring(0, 30) + '</span>';
-    } else {
-      var errText = await response.text();
-      statusEl.innerHTML = '<span style="color:#f88">❌ HTTP ' + response.status + ': ' + errText.substring(0, 60) + '</span>';
-    }
-  } catch(e) {
-    statusEl.innerHTML = '<span style="color:#f88">❌ 网络错误: ' + e.message + '</span>';
-  }
-}
-
 function updateConnectionStatus(connected) {
   G.connected = connected;
   var dot = document.getElementById('connectionDot');
@@ -177,84 +8,74 @@ function updateConnectionStatus(connected) {
   text.textContent = connected ? '已连接' : '未连接';
 }
 
-// ========== OpenAI兼容API流式调用 ==========
-async function streamChatCompletion(messages, onChunk, signal) {
-  if (!AI_CONFIG.baseUrl || !AI_CONFIG.apiKey || !AI_CONFIG.model) {
-    throw new Error('AI服务未配置，请在菜单中设置');
-  }
-  
-  var response = await fetch(AI_CONFIG.baseUrl + '/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + AI_CONFIG.apiKey
-    },
-    body: JSON.stringify({
-      model: AI_CONFIG.model,
-      messages: messages,
-      max_tokens: AI_CONFIG.maxTokens,
-      temperature: AI_CONFIG.temperature,
-      stream: true
-    }),
-    signal: signal
-  });
-  
-  if (!response.ok) {
-    var errText = await response.text();
-    throw new Error('API错误 ' + response.status + ': ' + errText.substring(0, 100));
-  }
-  
-  var reader = response.body.getReader();
-  var decoder = new TextDecoder();
-  var fullContent = '';
-  var buffer = '';
-  
-  while (true) {
-    var result = await reader.read();
-    if (result.done) break;
-    
-    buffer += decoder.decode(result.value, { stream: true });
-    var lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-    
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      if (!line || !line.startsWith('data:')) continue;
-      var data = line.substring(5).trim();
-      if (data === '[DONE]') {
-        onChunk({ fullContent: fullContent, isFinished: true });
-        return fullContent;
-      }
+async function initMujianSDK() {
+  try {
+    if (window.MujianUMD && window.MujianUMD.MujianSdk) {
+      mujianSdk = window.MujianUMD.MujianSdk.getInstance();
+      await mujianSdk.init();
+      updateConnectionStatus(true);
+      
+      // 初始化玩家编号
+      initPlayerCode();
+      
+      // 获取玩家人设 - 修复版
       try {
-        var parsed = JSON.parse(data);
-        var delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
-        if (delta && delta.content) {
-          fullContent += delta.content;
-          onChunk({ fullContent: fullContent, isFinished: false });
+        var personaRes = await mujianSdk.ai.chat.settings.persona.getActive();
+        console.log('★ 人设原始数据:', JSON.stringify(personaRes));
+        
+        if (personaRes) {
+          // 兼容多种数据结构
+          var pName = personaRes.name || personaRes.displayName || null;
+          var pDesc = personaRes.description || personaRes.bio || personaRes.content || null;
+          
+          // 如果外层没有，试试 data 字段
+          if (!pName && personaRes.data) {
+            pName = personaRes.data.name || personaRes.data.displayName || null;
+          }
+          if (!pDesc && personaRes.data) {
+            pDesc = personaRes.data.description || personaRes.data.bio || null;
+          }
+          
+          if (pName) G.playerName = pName;
+          if (pDesc) G.playerPersona = pDesc;
+          
+          console.log('★ 玩家名字:', G.playerName || '未获取到');
+          console.log('★ 玩家人设:', G.playerPersona ? G.playerPersona.substring(0, 80) : '未获取到');
+          saveGame();
+        } else {
+          console.log('⚠️ 人设数据为空');
+        }
+      } catch(e) {
+        console.log('获取人设失败:', e);
+      }
+
+      // 监听平台的新游戏事件
+      try {
+        mujianSdk.onNewGame(function() {
+          localStorage.removeItem('paleCorridor_save');
+          localStorage.removeItem('paleCorridor_cycle');
+          localStorage.removeItem('pale_corridor_reputation');
+          localStorage.removeItem('pale_corridor_commissions');
+          location.reload();
+        });
+      } catch(e) {}
+      // 加载历史消息
+      try {
+        var messages = await mujianSdk.ai.chat.message.getAll();
+        if (messages && messages.length > 0) {
+          messages.forEach(function(msg) {
+            if (msg.role === 'assistant') {
+              G.messageHistory.push({ type: 'ai', text: msg.content });
+            } else if (msg.role === 'user') {
+              G.messageHistory.push({ type: 'player', text: msg.content });
+            }
+          });
         }
       } catch(e) {}
+    } else {
+      updateConnectionStatus(false);
     }
-  }
-  
-  if (fullContent) {
-    onChunk({ fullContent: fullContent, isFinished: true });
-  }
-  return fullContent;
-}
-
-// ========== 初始化 ==========
-async function initMujianSDK() {
-  loadAIConfig();
-  
-  var isConfigured = AI_CONFIG.baseUrl && AI_CONFIG.apiKey && AI_CONFIG.model;
-  updateConnectionStatus(isConfigured);
-  G.connected = isConfigured;
-  
-  if (typeof initPlayerCode === 'function') {
-    initPlayerCode();
-  }
-  
-  if (!isConfigured) {
-    console.log('⚠️ AI服务未配置，请在菜单 → AI服务设置中配置');
+  } catch (e) {
+    updateConnectionStatus(false);
   }
 }
