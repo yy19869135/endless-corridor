@@ -33,6 +33,9 @@ function openAISettings() {
   document.getElementById('aiApiKey').value = AI_CONFIG.apiKey;
   document.getElementById('aiModelName').value = AI_CONFIG.model;
   document.getElementById('aiSettingsStatus').textContent = '';
+  // 清空模型列表
+  var listEl = document.getElementById('aiModelList');
+  if (listEl) listEl.innerHTML = '';
   document.getElementById('aiSettingsOverlay').classList.add('show');
 }
 
@@ -46,12 +49,82 @@ function saveAISettings() {
   AI_CONFIG.model = document.getElementById('aiModelName').value.trim();
   saveAIConfig();
   
-  // 更新连接状态
   var isConfigured = AI_CONFIG.baseUrl && AI_CONFIG.apiKey && AI_CONFIG.model;
   updateConnectionStatus(isConfigured);
   G.connected = isConfigured;
   
   document.getElementById('aiSettingsStatus').innerHTML = '<span style="color:#8f8">✅ 已保存</span>';
+}
+
+// ========== 获取模型列表 ==========
+async function fetchModelList() {
+  var statusEl = document.getElementById('aiSettingsStatus');
+  var listEl = document.getElementById('aiModelList');
+  var url = document.getElementById('aiBaseUrl').value.trim().replace(/\/+$/, '');
+  var key = document.getElementById('aiApiKey').value.trim();
+  
+  if (!url || !key) {
+    statusEl.innerHTML = '<span style="color:#f88">❌ 请先填写 API Base URL 和 API Key</span>';
+    return;
+  }
+  
+  statusEl.innerHTML = '<span style="color:#ff8">⏳ 获取模型列表...</span>';
+  if (listEl) listEl.innerHTML = '';
+  
+  try {
+    var response = await fetch(url + '/models', {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + key
+      }
+    });
+    
+    if (!response.ok) {
+      var errText = await response.text();
+      statusEl.innerHTML = '<span style="color:#f88">❌ HTTP ' + response.status + ': ' + errText.substring(0, 60) + '</span>';
+      return;
+    }
+    
+    var data = await response.json();
+    var models = data.data || data;
+    
+    if (!models || models.length === 0) {
+      statusEl.innerHTML = '<span style="color:#f88">❌ 未找到可用模型</span>';
+      return;
+    }
+    
+    // 排序：按id字母顺序
+    models.sort(function(a, b) {
+      return (a.id || '').localeCompare(b.id || '');
+    });
+    
+    statusEl.innerHTML = '<span style="color:#8f8">✅ 找到 ' + models.length + ' 个模型，点击选择</span>';
+    
+    if (listEl) {
+      listEl.innerHTML = '';
+      for (var i = 0; i < models.length; i++) {
+        var modelId = models[i].id || models[i];
+        var btn = document.createElement('div');
+        btn.className = 'model-list-item';
+        btn.textContent = modelId;
+        btn.setAttribute('data-model', modelId);
+        btn.onclick = function() {
+          document.getElementById('aiModelName').value = this.getAttribute('data-model');
+          // 高亮选中
+          var items = listEl.querySelectorAll('.model-list-item');
+          for (var j = 0; j < items.length; j++) {
+            items[j].classList.remove('selected');
+          }
+          this.classList.add('selected');
+          statusEl.innerHTML = '<span style="color:#8f8">✅ 已选择: ' + this.getAttribute('data-model') + '</span>';
+        };
+        listEl.appendChild(btn);
+      }
+    }
+    
+  } catch(e) {
+    statusEl.innerHTML = '<span style="color:#f88">❌ 网络错误: ' + e.message + '</span>';
+  }
 }
 
 async function testAIConnection() {
@@ -163,14 +236,13 @@ async function streamChatCompletion(messages, onChunk, signal) {
     }
   }
   
-  // 如果没收到 [DONE] 但流结束了
   if (fullContent) {
     onChunk({ fullContent: fullContent, isFinished: true });
   }
   return fullContent;
 }
 
-// ========== 初始化（替代initMujianSDK） ==========
+// ========== 初始化 ==========
 async function initMujianSDK() {
   loadAIConfig();
   
@@ -178,13 +250,11 @@ async function initMujianSDK() {
   updateConnectionStatus(isConfigured);
   G.connected = isConfigured;
   
-  // 初始化玩家编号
   if (typeof initPlayerCode === 'function') {
     initPlayerCode();
   }
   
   if (!isConfigured) {
     console.log('⚠️ AI服务未配置，请在菜单 → AI服务设置中配置');
-    // 不再自动弹出，只在控制台提示
   }
 }
