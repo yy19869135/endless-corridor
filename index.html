@@ -269,32 +269,33 @@
 
 <!-- AI服务设置弹窗 -->
 <div class="ai-settings-overlay" id="aiSettingsOverlay" onclick="if(event.target===this)closeAISettings()">
-  <div class="ai-settings-panel" style="background:#1a1a2e;border:1px solid #3a3a5c;border-radius:12px;padding:20px;max-width:360px;width:90%;color:#ccc;font-size:13px;max-height:80vh;overflow-y:auto;">
-    <div style="text-align:center;font-size:16px;margin-bottom:16px;color:#e0e0ff;">⚙️ AI 服务设置</div>
-    <div style="margin-bottom:12px;">
-      <label style="display:block;margin-bottom:4px;color:#888;font-size:11px;">API Base URL</label>
-      <input type="text" id="aiBaseUrl" placeholder="https://api.openai.com/v1" style="width:100%;padding:8px;background:#0d0d1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:13px;box-sizing:border-box;">
+  <div class="ai-settings-panel">
+    <div class="ai-settings-title">⚙️ AI 服务设置</div>
+    <div class="ai-field-group">
+      <label class="ai-field-label">API Base URL</label>
+      <input type="text" id="aiBaseUrl" class="ai-field-input" placeholder="https://api.openai.com/v1">
     </div>
-    <div style="margin-bottom:12px;">
-      <label style="display:block;margin-bottom:4px;color:#888;font-size:11px;">API Key</label>
-      <input type="password" id="aiApiKey" placeholder="sk-..." style="width:100%;padding:8px;background:#0d0d1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:13px;box-sizing:border-box;">
+    <div class="ai-field-group">
+      <label class="ai-field-label">API Key</label>
+      <input type="password" id="aiApiKey" class="ai-field-input" placeholder="sk-...">
     </div>
-    <div style="margin-bottom:8px;">
-      <label style="display:block;margin-bottom:4px;color:#888;font-size:11px;">Model Name</label>
-      <div style="display:flex;gap:6px;">
-        <input type="text" id="aiModelName" placeholder="gpt-4o" style="flex:1;padding:8px;background:#0d0d1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:13px;box-sizing:border-box;">
-        <button onclick="fetchModelList()" style="padding:8px 12px;background:#2a3a4a;border:1px solid #3a5a6a;border-radius:6px;color:#8cf;cursor:pointer;font-size:12px;white-space:nowrap;">📋 获取</button>
+    <div class="ai-field-group">
+      <label class="ai-field-label">Model Name</label>
+      <div class="ai-model-row">
+        <input type="text" id="aiModelName" class="ai-field-input" placeholder="gpt-4o">
+        <button class="ai-fetch-btn" onclick="fetchModelList()">📋 获取</button>
       </div>
     </div>
-    <div id="aiModelList" style="max-height:150px;overflow-y:auto;margin-bottom:12px;"></div>
-    <div style="display:flex;gap:8px;">
-      <button onclick="testAIConnection()" style="flex:1;padding:10px;background:#2a4a3a;border:1px solid #3a6a4a;border-radius:8px;color:#8f8;cursor:pointer;font-size:13px;">🔌 测试连接</button>
-      <button onclick="saveAISettings()" style="flex:1;padding:10px;background:#3a3a6a;border:1px solid #5a5a8a;border-radius:8px;color:#aaf;cursor:pointer;font-size:13px;">💾 保存</button>
+    <div class="ai-model-list" id="aiModelList"></div>
+    <div class="ai-btn-group">
+      <button class="ai-test-btn" onclick="testAIConnection()">🔌 测试连接</button>
+      <button class="ai-save-btn" onclick="saveAISettings()">💾 保存</button>
     </div>
-    <div id="aiSettingsStatus" style="margin-top:10px;text-align:center;font-size:12px;min-height:20px;"></div>
-    <button onclick="closeAISettings()" style="width:100%;margin-top:12px;padding:8px;background:transparent;border:1px solid #444;border-radius:6px;color:#888;cursor:pointer;font-size:12px;">关闭</button>
+    <div class="ai-status" id="aiSettingsStatus"></div>
+    <button class="ai-close-btn" onclick="closeAISettings()">关闭</button>
   </div>
 </div>
+
 
 <!-- 特效层 -->
 <div class="san-effect" id="sanEffect"></div>
