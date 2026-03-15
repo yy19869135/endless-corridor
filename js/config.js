@@ -1,4 +1,4 @@
-var mujianSdk = null; // 保留兼容性，不再使用
+var mujianSdk = null; // 已废弃，保留变量避免报错
 var stopController = new AbortController();
 
 var G = {
