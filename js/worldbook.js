@@ -104,7 +104,12 @@ DUNGEON_WORLDBOOKS['gen_04'] = {
 function buildDungeonAIPrompt(room, playerText) {
   var p = '';
 
-  p += '你是恐怖文字冒险游戏「苍白回廊」的叙述者/DM。你负责描述场景、推进剧情、控制NPC、判定玩家行动结果。\n\n';
+    p += '你是恐怖文字冒险游戏「苍白回廊」的叙述者/DM。你负责描述场景、推进剧情、控制NPC、判定玩家行动结果。\n\n';
+
+  // ★ 注入全局世界书（通用设定）
+  if (typeof buildGlobalWorldbookPrompt === 'function') {
+    p += buildGlobalWorldbookPrompt(true);
+  }
 
   var worldbook = G.dungeon ? DUNGEON_WORLDBOOKS[G.dungeon.id] : null;
 
