@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>苍白回廊 - 无限流生存</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- 状态栏 -->
+<div class="status-bar">
+  <div class="stat-item">
+    <span class="stat-icon">❤️</span>
+    <div class="stat-bar-bg"><div class="stat-bar-fill hp-fill" id="hpBar" style="width:100%"></div></div>
+    <span id="hpText" style="font-size:11px;min-width:32px">10/10</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-icon">🧠</span>
+    <div class="stat-bar-bg"><div class="stat-bar-fill san-fill" id="sanBar" style="width:100%"></div></div>
+    <span id="sanText" style="font-size:11px;min-width:32px">100/100</span>
+  </div>
+  <div class="stat-item time-display cycle-timer" id="cycleTimerRow">
+    <span class="stat-icon">⏱️</span>
+    <span id="cycleTimerText">第1天 11:59:48</span>
+  </div>
+  <div class="stat-item time-display">
+    <span class="stat-icon">🕐</span>
+    <span id="timeText">--:--</span>
+  </div>
+  <div class="stat-item item-count" onclick="toggleInventory()" style="cursor:pointer">
+    <span class="stat-icon">🎒</span>
+    <span id="itemCount">0</span>
+  </div>
+  <div class="stat-item fragment-display">
+    <span class="stat-icon">💎</span>
+    <span id="fragmentCount">0</span>
+  </div>
+</div>
+
+<!-- 剧情区 -->
+<div class="story-area">
+  <div class="scene-image-container">
+    <div class="scene-image-placeholder" id="sceneImage"><span>🌫️</span></div>
+    <div class="room-name-overlay" id="roomName">苍白回廊</div>
+    <div class="scene-connection" id="connectionStatus">
+      <div class="connection-dot disconnected" id="connectionDot"></div>
+      <span class="connection-text disconnected" id="connectionText">未连接</span>
+    </div>
+    <div class="text-area" id="textArea"></div>
+  </div>
+</div>
+
+<!-- 控制区 -->
+<div class="control-area">
+  <div class="input-area">
+    <input type="text" class="text-input" id="playerInput" placeholder="输入你想做的事...">
+    <button class="send-btn" onclick="sendPlayerInput()">➤</button>
+  </div>
+  <div class="minimap-container">
+    <div class="minimap-toggle">
+      <button class="map-mode-btn active" id="mapBtnTop" onclick="switchMapMode('topdown')">俯视</button>
+      <button class="map-mode-btn" id="mapBtnList" onclick="switchMapMode('list')">列表</button>
+    </div>
+    <div class="minimap-topdown" id="mapTopdown"></div>
+    <div class="minimap-list" id="mapList"></div>
+  </div>
+  <div class="bottom-controls">
+    <div class="joystick-container">
+      <div class="joystick-base" id="joystickBase">
+        <span class="joystick-direction dir-up">▲</span>
+        <span class="joystick-direction dir-down">▼</span>
+        <span class="joystick-direction dir-left">◀</span>
+        <span class="joystick-direction dir-right">▶</span>
+        <div class="joystick-stick" id="joystickStick"></div>
+      </div>
+    </div>
+    <div class="action-buttons" id="quickActions">
+      <button class="action-btn" onclick="doAction('调查')">🔍 调查</button>
+      <button class="action-btn" onclick="doAction('查看')">👁️ 查看</button>
+      <button class="action-btn" onclick="doAction('倾听')">👂 倾听</button>
+      <button class="action-btn" onclick="toggleClueSidebar()">📋 线索</button>
+      <button class="action-btn primary" onclick="toggleInventory()">🎒 背包</button>
+    </div>
+  </div>
+</div>
+
+<!-- 背包弹窗 -->
+<div class="inventory-overlay" id="inventoryOverlay" onclick="if(event.target===this)toggleInventory()">
+  <div class="inventory-panel">
+    <div class="inventory-title">🎒 背包</div>
+    <div class="inv-tab-bar">
+      <button class="inv-tab active" onclick="switchInvTab('all',this)">全部</button>
+      <button class="inv-tab" onclick="switchInvTab('dungeon',this)">副本</button>
+      <button class="inv-tab" onclick="switchInvTab('permanent',this)">永久</button>
+    </div>
+    <div id="inventoryList"><div style="text-align:center;color:#555;padding:20px;font-size:13px">背包是空的</div></div>
+    <button class="inv-close-btn" onclick="toggleInventory()">关闭</button>
+  </div>
+</div>
+
+<!-- 开场弹窗 -->
+<div class="intro-overlay" id="introOverlay">
+  <div class="intro-panel">
+    <div class="intro-title">🌫️ 苍白回廊</div>
+    <div class="intro-subtitle">— 无限流生存游戏 —</div>
+    <div class="intro-section">
+      <div class="intro-section-title">📜 世界观</div>
+      <div class="intro-section-content">
+        你被一个名为"回廊系统"的超自然存在选中，被迫参加致命的副本游戏。<br>
+        在灰雾笼罩的苍白回廊中，你需要不断挑战副本、收集灵魂碎片、结交同伴，才能活下去。<br>
+        每个副本都是一个独立的恐怖空间，限定时间内完成目标才能存活。
+      </div>
+    </div>
+    <div class="intro-section">
+      <div class="intro-section-title">⚙️ 核心规则</div>
+      <div class="intro-section-content">
+        <li><span class="intro-highlight">❤️ HP</span>：生命值，归零则死亡</li>
+        <li><span class="intro-highlight">🧠 SAN</span>：理智值，发现恐怖事物会下降，归零则疯狂</li>
+        <li><span class="intro-highlight">💎 灵魂碎片</span>：通用货币，副本结算获得</li>
+        <li><span class="intro-warn">死亡是永久的</span>，请谨慎行动</li>
+        <li>副本内道具在结束后清空，<span class="intro-warn">特殊道具</span>可带出</li>
+      </div>
+    </div>
+    <div class="intro-section">
+      <div class="intro-section-title">🎮 操作说明</div>
+      <div class="intro-section-content">
+        <li>使用<span class="intro-warn">摇杆</span>在房间之间移动</li>
+        <li>使用<span class="intro-warn">快捷按钮</span>或<span class="intro-warn">输入框</span>进行交互</li>
+        <li>探索房间，收集<span class="intro-warn">道具</span>和<span class="intro-warn">线索</span></li>
+        <li>找到关键线索后触发结局</li>
+      </div>
+    </div>
+    <button class="intro-start-btn" onclick="closeIntroAndStart()">🌀 进入苍白回廊</button>
+  </div>
+</div>
+
+<!-- 线索侧边栏 -->
+<div class="clue-sidebar-overlay" id="clueSidebarOverlay" onclick="toggleClueSidebar()"></div>
+<div class="clue-sidebar" id="clueSidebar">
+  <div class="clue-sidebar-header">
+    <div>
+      <span class="clue-sidebar-title">🔍 线索板</span>
+      <span class="clue-count-badge" id="clueCountBadge">0 / 0</span>
+    </div>
+    <button class="clue-sidebar-close" onclick="toggleClueSidebar()">✕</button>
+  </div>
+  <div class="clue-sidebar-body" id="clueSidebarBody">
+    <div class="clue-empty">尚未进入副本<br><br>进入副本后在此查看线索</div>
+  </div>
+  <div class="clue-progress">
+    <div class="clue-progress-text" id="clueProgressText">线索进度：0 / 0</div>
+    <div class="clue-progress-bar-bg"><div class="clue-progress-bar-fill" id="clueProgressBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- 谜题输入框弹窗 -->
+<div class="puzzle-input-overlay" id="puzzleInputOverlay">
+  <div class="puzzle-input-panel">
+    <div class="puzzle-input-prompt" id="puzzleInputPrompt"></div>
+    <input type="text" class="puzzle-input-field" id="puzzleInputField" placeholder="输入你的答案..." maxlength="50">
+    <div class="puzzle-input-buttons">
+      <button class="puzzle-submit-btn" onclick="submitPuzzleInput()">✍️ 写下</button>
+      <button class="puzzle-cancel-btn" onclick="closePuzzleInput()">放下</button>
+    </div>
+    <div class="puzzle-input-hint" id="puzzleInputHint"></div>
+    <div class="puzzle-input-attempts" id="puzzleInputAttempts"></div>
+  </div>
+</div>
+
+<!-- 副本结算 -->
+<div class="settlement-overlay" id="settlementOverlay">
+  <div class="settlement-panel" id="settlementPanel"></div>
+</div>
+
+<!-- 阵营抽取 -->
+<div class="faction-draw-overlay" id="factionDrawOverlay">
+  <div class="faction-draw-panel">
+    <div class="faction-draw-title" id="factionDrawTitle">点击卡牌抽取你的阵营</div>
+    <div class="faction-card"><div class="faction-card-inner" id="factionCardInner" onclick="flipFactionCard()">
+      <div class="faction-card-front"><div class="faction-card-front-icon">🎴</div><div class="faction-card-front-text">点击翻转</div></div>
+      <div class="faction-card-back"><div class="faction-card-back-icon" id="factionIcon">?</div><div class="faction-card-back-name" id="factionName">???</div><div class="faction-card-back-desc" id="factionDesc">???</div></div>
+    </div></div>
+    <button class="faction-confirm-btn" id="factionConfirmBtn" onclick="confirmFaction()">✨ 确认阵营</button>
+  </div>
+</div>
+
+<!-- 副本介绍页 -->
+<div class="dungeon-intro-overlay" id="dungeonIntroOverlay">
+  <div class="dungeon-intro-panel" id="dungeonIntroPanel"></div>
+</div>
+
+<!-- 副本选择 -->
+<div class="dungeon-select-overlay" id="dungeonSelectOverlay">
+  <div class="dungeon-select-panel" id="dungeonSelectPanel"></div>
+</div>
+
+<!-- 地点卡片弹窗 -->
+<div class="location-card-overlay" id="locationCardOverlay" onclick="dismissLocationCard()">
+  <div class="location-card" id="locationCard" onclick="event.stopPropagation()">
+    <div class="loc-card-icon" id="locCardIcon">🏛️</div>
+    <div class="loc-card-name" id="locCardName">中央广场</div>
+    <div class="loc-card-region" id="locCardRegion">中央区</div>
+    <div class="loc-card-desc" id="locCardDesc">描述</div>
+    <div class="loc-card-features" id="locCardFeatures"></div>
+    <button class="loc-card-dismiss" onclick="dismissLocationCard()">继续探索</button>
+  </div>
+</div>
+
+<!-- 先驱者笔记弹窗 -->
+<div class="hint-overlay" id="hintOverlay" onclick="if(event.target===this)closeHintPanel()">
+  <div class="hint-panel">
+    <div class="hint-title">🕯️ 先驱者的笔记</div>
+    <div class="hint-subtitle">阅读这些文字会侵蚀你的精神...</div>
+    <div id="hintList">
+      <div class="hint-no-dungeon">尚未进入副本<br><br>进入副本后可在此查看先驱者留下的笔记</div>
+    </div>
+    <div class="hint-warning" id="hintWarning">⚠️ 每次解读笔记都会消耗SAN值<br>📍 系统会自动推荐你当前可能卡住的步骤</div>
+    <button class="hint-close-btn" onclick="closeHintPanel()">合上笔记</button>
+  </div>
+</div>
+
+<!-- GM隐藏面板 -->
+<div class="gm-overlay" id="gmOverlay">
+  <div class="gm-panel">
+    <div class="gm-header">
+      <span class="gm-title">🔧 GM面板 - 副本数据</span>
+      <button class="gm-close" onclick="closeGMPanel()">✕</button>
+    </div>
+    <div class="gm-tabs">
+      <button class="gm-tab active" onclick="switchGMTab('items')">🎒 道具</button>
+      <button class="gm-tab" onclick="switchGMTab('rooms')">🚪 房间</button>
+      <button class="gm-tab" onclick="switchGMTab('clues')">🔍 线索</button>
+      <button class="gm-tab" onclick="switchGMTab('events')">⚡ 事件</button>
+      <button class="gm-tab" onclick="switchGMTab('debug')">🔧 调试</button>
+      <button class="gm-tab" data-tab="codes" onclick="switchGMTab('codes')">📱 编号</button>
+    </div>
+    <div class="gm-content" id="gmContent"></div>
+  </div>
+</div>
+
+<!-- 全局菜单按钮 -->
+<div class="game-menu-btn" onclick="toggleGameMenu()">☰</div>
+
+<!-- 菜单弹窗 -->
+<div class="game-menu-overlay" id="gameMenuOverlay" onclick="if(event.target===this)closeGameMenu()">
+  <div class="game-menu-panel">
+    <div class="game-menu-title">☰ 菜单</div>
+    <div class="game-menu-item" onclick="doSaveGame()">💾 存档</div>
+    <div class="game-menu-item" onclick="doLoadGame()">📂 读档</div>
+    <div class="game-menu-item" onclick="closeGameMenu();openHintPanel()">🕯️ 先驱者笔记</div>
+    <div class="game-menu-item" onclick="openStoryRecall()">📖 回忆剧情</div>
+    <div class="game-menu-item" onclick="closeGameMenu();openAISettings()">⚙️ AI服务设置</div>
+    <div class="game-menu-item danger" onclick="confirmRestart()">🔄 重新开始</div>
+    <div class="game-menu-close" onclick="closeGameMenu()">返回</div>
+  </div>
+</div>
+
+<!-- 回忆剧情弹窗 -->
+<div class="story-recall-overlay" id="storyRecallOverlay" onclick="if(event.target===this)closeStoryRecall()">
+  <div class="story-recall-panel">
+    <div class="story-recall-title">📖 剧情回忆</div>
+    <div class="story-recall-body" id="storyRecallBody">
+      <div class="story-recall-empty">暂无剧情记录</div>
+    </div>
+    <div class="story-recall-close" onclick="closeStoryRecall()">关闭</div>
+  </div>
+</div>
+
+<!-- AI服务设置弹窗 -->
+<div class="ai-settings-overlay" id="aiSettingsOverlay" onclick="if(event.target===this)closeAISettings()">
+  <div class="ai-settings-panel" style="background:#1a1a2e;border:1px solid #3a3a5c;border-radius:12px;padding:20px;max-width:360px;width:90%;color:#ccc;font-size:13px;">
+    <div style="text-align:center;font-size:16px;margin-bottom:16px;color:#e0e0ff;">⚙️ AI 服务设置</div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;margin-bottom:4px;color:#888;font-size:11px;">API Base URL</label>
+      <input type="text" id="aiBaseUrl" placeholder="https://api.openai.com/v1" style="width:100%;padding:8px;background:#0d0d1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:13px;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;margin-bottom:4px;color:#888;font-size:11px;">API Key</label>
+      <input type="password" id="aiApiKey" placeholder="sk-..." style="width:100%;padding:8px;background:#0d0d1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:13px;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;margin-bottom:4px;color:#888;font-size:11px;">Model Name</label>
+      <input type="text" id="aiModelName" placeholder="gpt-4o" style="width:100%;padding:8px;background:#0d0d1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:13px;box-sizing:border-box;">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="testAIConnection()" style="flex:1;padding:10px;background:#2a4a3a;border:1px solid #3a6a4a;border-radius:8px;color:#8f8;cursor:pointer;font-size:13px;">🔌 测试连接</button>
+      <button onclick="saveAISettings()" style="flex:1;padding:10px;background:#3a3a6a;border:1px solid #5a5a8a;border-radius:8px;color:#aaf;cursor:pointer;font-size:13px;">💾 保存</button>
+    </div>
+    <div id="aiSettingsStatus" style="margin-top:10px;text-align:center;font-size:12px;min-height:20px;"></div>
+    <button onclick="closeAISettings()" style="width:100%;margin-top:12px;padding:8px;background:transparent;border:1px solid #444;border-radius:6px;color:#888;cursor:pointer;font-size:12px;">关闭</button>
+  </div>
+</div>
+
+<!-- 特效层 -->
+<div class="san-effect" id="sanEffect"></div>
+<div class="san-vignette" id="sanVignette"></div>
+<div class="notification" id="notification"></div>
+
+<!-- 系统手机 -->
+<button class="phone-toggle-btn" id="phoneToggleBtn" onclick="toggleSystemPhone()">📱</button>
+<div class="system-phone-overlay" id="systemPhone">
+  <div class="system-phone-header">
+    <span>☠ SYSTEM v1.0</span>
+    <span style="cursor:pointer;font-size:14px" onclick="toggleSystemPhone()">✕</span>
+  </div>
+  <div class="system-screen" id="systemScreen"></div>
+  <div style="padding:6px;text-align:center;background:#1a0808;border-top:1px solid #3a1515;display:flex;justify-content:space-around">
+    <span style="cursor:pointer;font-size:14px" onclick="renderSystemApp('home')">🏠</span>
+    <span style="cursor:pointer;font-size:14px" onclick="renderSystemApp('contacts')">📱</span>
+    <span style="cursor:pointer;font-size:14px" onclick="renderSystemApp('bag')">🎒</span>
+    <span style="cursor:pointer;font-size:14px" onclick="renderSystemApp('rank')">🏆</span>
+  </div>
+</div>
+
+<!-- JS文件按顺序加载 -->
+
+<!-- 第1层：基础配置 -->
+<script src="js/config.js"></script>
+<script src="js/sdk.js"></script>
+<script src="js/save.js"></script>
+
+<!-- 第2层：基础UI -->
+<script src="js/ui.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/clue.js"></script>
+<script src="js/minimap.js"></script>
+
+<!-- 第3层：世界与移动 -->
+<script src="js/world.js"></script>
+<script src="js/phone.js"></script>
+<script src="js/movement.js"></script>
+
+<!-- 第4层：AI系统 -->
+<script src="js/ai.js"></script>
+<script src="js/ai_input.js"></script>
+<script src="js/worldbook.js"></script>
+<script src="js/ai_engine.js"></script>
+<script src="js/ai_move.js"></script>
+
+<!-- 第5层：副本数据 -->
+<script src="js/dungeons/dungeon-list.js"></script>
+<script src="js/dungeons/generated-defs.js"></script>
+<script src="js/dungeons/hospital.js"></script>
+<script src="js/dungeons/mansion.js"></script>
+<script src="js/dungeons/train.js"></script>
+<script src="js/dungeons/dungeon-generator.js"></script>
+<script src="js/dungeons/school.js"></script>
+<script src="js/dungeons/church.js"></script>
+<script src="js/dungeons/dungeon-list-full.js"></script>
+
+<!-- 第6层：副本核心 -->
+<script src="js/dungeon_core.js"></script>
+<script src="js/dungeon_select.js"></script>
+<script src="js/phone_system.js"></script>
+<script src="js/leaderboard.js"></script>
+
+<!-- 第7层：角色与社交 -->
+<script src="js/characters.js"></script>
+<script src="js/contacts.js"></script>
+<script src="js/commission.js"></script>
+<script src="js/ending.js"></script>
+<script src="js/cycle.js"></script>
+
+<!-- 第8层：扩展覆盖 -->
+<script src="js/init.js"></script>
+<script src="js/world_extended.js"></script>
+<script src="js/location_card.js"></script>
+<script src="js/floor_system.js"></script>
+<script src="js/gm_panel.js"></script>
+<script src="js/gm_codes.js"></script>
+<script src="js/npc_friend.js"></script>
+<script src="js/hints.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/rule_events.js"></script>
+<script src="js/ai_choice.js"></script>
+<script src="js/player_info.js"></script>
+<script src="js/participants.js"></script>
+<script src="js/ai_random_event.js"></script>
+
+</body>
+</html>
