@@ -1765,3 +1765,26 @@ img {
   color: #cc3333;
   animation: timeUrgent 1s infinite;
 }
+
+/* 模型列表项 */
+.model-list-item {
+  padding: 6px 10px;
+  margin: 2px 0;
+  background: #0d0d1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.model-list-item:hover {
+  background: #1a1a3a;
+  border-color: #55a;
+  color: #fff;
+}
+.model-list-item.selected {
+  background: #2a2a5a;
+  border-color: #77f;
+  color: #aaf;
+}
