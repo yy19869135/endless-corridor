@@ -174,7 +174,7 @@ function moveToRoom(roomId) {
     // 不调用AI，直接生成操作按钮
     setTimeout(function() { generateContextActions(); }, 300);
 
-  } else if (G.connected && mujianSdk) {
+    } else if (G.connected) {
     generateRoomNarration(roomId, room, isFirstVisit);
   } else {
 
