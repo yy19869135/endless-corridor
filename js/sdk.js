@@ -65,8 +65,13 @@ function saveAPISettings() {
     updateConnectionStatus(false);
   }
 
-  saveGame();
-  showNotification('✅ API设置已保存', 'clue');
+  if (typeof saveGame === 'function') saveGame();
+
+  // 先关闭设置页面，再显示通知
+  closeAPISettings();
+  setTimeout(function() {
+    showNotification('✅ API设置已保存', 'clue');
+  }, 300);
 }
 
 async function testAPIConnection() {
